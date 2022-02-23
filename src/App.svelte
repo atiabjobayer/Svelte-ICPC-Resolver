@@ -2,7 +2,7 @@
   import { flip } from "svelte/animate";
   import { onMount } from "svelte";
 
-  let contest, scoreboard, problems, problemData, frozenSubmissions;
+  let contest, scoreboard, problems, problemData, frozenSubmissions, frozenCopy;
   let loaded: boolean = false;
   let startTime: Date;
   let usernameQueue: [] = [];
@@ -15,15 +15,23 @@
 
   const loadData = async () => {
     loaded = false;
-    const response = await fetch("http://localhost:8080/about/test");
+    const response = await fetch(
+      "https://api.jsonbin.io/b/62161244ca70c44b6ea77726"
+    );
 
     let data = await response.json();
     console.log(data);
 
     //data = JSON.parse(JSON.stringify(data));
 
-    ({ contest, scoreboard, problems, problemData, frozenSubmissions } =
-      data[0].data);
+    ({
+      contest,
+      scoreboard,
+      problems,
+      problemData,
+      frozenSubmissions,
+      frozenCopy,
+    } = data[0].data);
 
     sortScore();
     loaded = true;
@@ -32,6 +40,8 @@
 
     lastIndex = scoreboard.at(-1).position - 1;
     lastUser = scoreboard.at(-1).username;
+
+    //frozenCopy = frozenSubmissions;
 
     //console.log(lastIndex);
   };
@@ -115,23 +125,9 @@
       }
     }
 
-    // console.log(
-    //   "ager pen: " + scoreboard[lastIndex]["problem_" + letter + "_penalty"]
+    // scoreboard[lastIndex]["problem_" + letter + "_penalty"] = minute(
+    //   Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) + 1200
     // );
-
-    scoreboard[lastIndex]["problem_" + letter + "_penalty"] = minute(
-      Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) + 1200
-    );
-
-    // console.log(
-    //   "zoger por pen: " +
-    //     scoreboard[lastIndex]["problem_" + letter + "_penalty"]
-    // );
-
-    // if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_penalty"])) {
-    //   console.log(scoreboard[lastIndex]["problem_" + letter + "_penalty"]);
-    //   console.log("NaN checkpoint 1");
-    // }
 
     if (submission["verdict"] == "1") {
       scoreboard[lastIndex]["problem_" + letter + "_score"] =
@@ -159,11 +155,19 @@
 
       var delay: number = (subTime.getTime() - startTime.getTime()) / 1000;
 
+      var agerSub = Number(
+        scoreboard[lastIndex]["problem_" + letter + "_submission"]
+      );
+      console.log(frozenCopy);
+      var newSub = Object.keys(frozenCopy[lastUser][letter]).length;
+
+      console.log("Puran submission ache = " + agerSub);
+      console.log("Notun submission = " + newSub);
+      console.log("Penalty hoilo = " + (agerSub + newSub) * 1200);
+
       scoreboard[lastIndex]["problem_" + letter + "_penalty"] =
         Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) +
-        Number(
-          scoreboard[lastIndex]["problem_" + letter + "_submission"] * 1200
-        );
+        (agerSub + newSub) * 1200;
 
       // if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_penalty"])) {
       //   console.log("NaN checkpoint 4");
@@ -211,9 +215,9 @@
       Number(scoreboard[lastIndex]["total_penalty"]) +
       Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]);
 
-    if (isNaN(scoreboard[lastIndex]["total_penalty"])) {
-      console.log("NaN checkpoint 7");
-    }
+    // if (isNaN(scoreboard[lastIndex]["total_penalty"])) {
+    //   console.log("NaN checkpoint 7");
+    // }
 
     if (isNaN(scoreboard[lastIndex]["total_score"]))
       scoreboard[lastIndex]["total_score"] = 0;
@@ -237,7 +241,7 @@
   }
 
   const process = () => {
-    if (lastIndex == 0) {
+    if (lastIndex < 0) {
       clearInterval(intId);
     }
 
@@ -312,12 +316,12 @@
           );
 
           // removing the submissiom
-          //frozenSubmissions[lastUser][letter].splice(j, 1);
-          console.log(
-            "Deleting submission #" + frozenSubmissions[lastUser][letter][0].id
-          );
-          frozenSubmissions[lastUser][letter] =
-            frozenSubmissions[lastUser][letter].shift();
+          frozenSubmissions[lastUser][letter].splice(j, 1);
+          // console.log(
+          //   "Deleting submission #" + frozenSubmissions[lastUser][letter][0].id
+          // );
+          // frozenSubmissions[lastUser][letter] =
+          //   frozenSubmissions[lastUser][letter].shift();
           //
 
           if (submission["verdict"] == "1") {
@@ -439,7 +443,7 @@
       {/each}
     </div>
     <button
-      on:click={process}
+      on:click={resolve}
       class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
     >
       Resolve
