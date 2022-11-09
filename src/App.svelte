@@ -16,7 +16,7 @@
   const loadData = async () => {
     loaded = false;
     const response = await fetch(
-      "https://api.jsonbin.io/b/62161244ca70c44b6ea77726"
+      "https://api.jsonbin.io/v3/b/62161244ca70c44b6ea77726"
     );
 
     let data = await response.json();
@@ -31,7 +31,7 @@
       problemData,
       frozenSubmissions,
       frozenCopy,
-    } = data[0].data);
+    } = data.record[0].data);
 
     sortScore();
     loaded = true;
@@ -263,6 +263,8 @@
       if (element.length > 0) {
         lastPersonHasSubmission = true;
         break;
+      } else {
+        // prottek row er pore thamar code eikhane likhte hobe
       }
     }
 
@@ -291,6 +293,31 @@
             " pending submission"
         );
 
+        // check if user er X problem er kono AC ache kina
+
+        var checkifAChe: boolean = false;
+        var ACIndex: number = 0;
+
+        for (
+          var j = 0;
+          j < Object.keys(frozenSubmissions[lastUser][letter]).length;
+          j++
+        ) {
+          submission =
+            frozenSubmissions[lastUser][letter][
+              Object.keys(frozenSubmissions[lastUser][letter])[j]
+            ];
+
+          if (submission["verdict"] == "1") {
+            // frozenSubmissions[lastUser][letter] = [];
+            ACIndex = j;
+            checkifAChe = true;
+            break;
+          }
+        }
+
+        // eitar por puran code
+
         for (
           var j = 0;
           j < Object.keys(frozenSubmissions[lastUser][letter]).length;
@@ -316,7 +343,19 @@
           );
 
           // removing the submissiom
-          frozenSubmissions[lastUser][letter].splice(j, 1);
+          console.log(checkifAChe ? "AC Ache" : "AC Nai");
+          console.log("AC er index hoitese = " + ACIndex);
+
+          var spliceCount: number = 0;
+
+          if (checkifAChe) {
+            spliceCount = ACIndex;
+          } else {
+            spliceCount =
+              Object.keys(frozenSubmissions[lastUser][letter]).length - j;
+          }
+
+          frozenSubmissions[lastUser][letter].splice(j, spliceCount);
           // console.log(
           //   "Deleting submission #" + frozenSubmissions[lastUser][letter][0].id
           // );
@@ -383,8 +422,79 @@
   type="text/css"
   href="https://gonitzoggo.com/assets/metro/css/metro-schemes.min.css"
 />
-
 <main class="text-center p-4 mx-0">
+  {#if loaded}
+    <h3>{contest.name}</h3>
+    <div class="grid">
+      {#each scoreboard as row, index (row.username)}
+        <div
+          id="row{row.username}"
+          class="row cells12"
+          style={`background-color:${
+            lastUser === row.username ? "#a69eff" : "#c2ccc5"
+          }`}
+          animate:flip={{ delay: 125 }}
+        >
+          <div class="cell">
+            <h2 class="text-xl">{index + 1}</h2>
+          </div>
+          <div class="cell colspan11">
+            <h3 class="align-left">{row.username}</h3>
+            <br />
+            <div class="flex-grid">
+              <div class="row cell-auto-size">
+                {#each problems as p, index (p.id)}
+                  {#if row["problem_" + p.letter + "_score"] > 0}
+                    <div class="cell" style="background-color:greenyellow">
+                      {p.letter}<br />
+                      <small>
+                        {row["problem_" + p.letter + "_penalty"]}
+                      </small>
+                    </div>
+                  {:else if frozenSubmissions[row.username][p.letter] != undefined && frozenSubmissions[row.username][p.letter].length > 0}
+                    <div class="cell" style="background-color:yellow">
+                      {p.letter}<br />
+                      <small>
+                        {Object.keys(frozenSubmissions[row.username][p.letter])
+                          .length > 0
+                          ? Object.keys(
+                              frozenSubmissions[row.username][p.letter]
+                            ).length + " - "
+                          : ""}{row["problem_" + p.letter + "_penalty"].length >
+                        0
+                          ? row["problem_" + p.letter + "_penalty"].length
+                          : "0"}
+                      </small>
+                    </div>
+                  {:else if row["problem_" + p.letter + "_score"] == "0"}
+                    <div class="cell" style="background-color:red">
+                      {p.letter}<br />
+                      <small>
+                        {row["problem_" + p.letter + "_penalty"]}
+                      </small>
+                    </div>
+                  {:else}
+                    <div class="cell">
+                      {row["problem_" + p.letter + "_score"]}
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      {/each}
+    </div>
+    <button
+      on:click={resolve}
+      class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
+    >
+      Resolve
+    </button>
+  {/if}
+</main>
+
+<!-- <main class="text-center p-4 mx-0">
   {#if loaded}
     <h3>{contest.name}</h3>
     <div class="grid">
@@ -443,14 +553,13 @@
       {/each}
     </div>
     <button
-      on:click={resolve}
+      on:click={process}
       class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
     >
       Resolve
     </button>
   {/if}
-</main>
-
+</main> -->
 <style>
   :root {
     --svelte-rgb: 255, 62, 0;
