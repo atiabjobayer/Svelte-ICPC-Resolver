@@ -15,9 +15,7 @@
 
   const loadData = async () => {
     loaded = false;
-    const response = await fetch(
-      "https://api.jsonbin.io/v3/b/62161244ca70c44b6ea77726"
-    );
+    const response = await fetch("http://localhost:8080/about/resolver/207/30");
 
     let data = await response.json();
     console.log(data);
@@ -43,7 +41,7 @@
 
     //frozenCopy = frozenSubmissions;
 
-    //console.log(lastIndex);
+    console.log(lastIndex);
   };
 
   function minute(seconds) {
@@ -56,7 +54,13 @@
   }
 
   const sortScore = () => {
-    scoreboard.sort((a, b) => a.total_score < b.total_score);
+    scoreboard.sort((a, b) => {
+      if (a.total_score == b.total_score) {
+        return a.total_penalty > b.total_penalty;
+      }
+
+      return a.total_score < b.total_score;
+    });
   };
 
   const focusTo = (index) => {
@@ -159,7 +163,10 @@
         scoreboard[lastIndex]["problem_" + letter + "_submission"]
       );
       console.log(frozenCopy);
-      var newSub = Object.keys(frozenCopy[lastUser][letter]).length;
+      var newSub =
+        Object.keys(frozenCopy[lastUser][letter]).length -
+        Object.keys(frozenSubmissions[lastUser][letter]).length +
+        1;
 
       console.log("Puran submission ache = " + agerSub);
       console.log("Notun submission = " + newSub);
@@ -397,6 +404,13 @@
   });
 </script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Prompt&display=swap"
+  rel="stylesheet"
+/>
+
 <link
   rel="stylesheet"
   type="text/css"
@@ -431,51 +445,102 @@
           id="row{row.username}"
           class="row cells12"
           style={`background-color:${
-            lastUser === row.username ? "#a69eff" : "#c2ccc5"
-          }`}
-          animate:flip={{ delay: 125 }}
+            lastUser === row.username ? "#305c5c" : "#393e46"
+          };padding-bottom:0px;height:4.25rem`}
+          animate:flip={{ delay: 250 }}
         >
-          <div class="cell">
-            <h2 class="text-xl">{index + 1}</h2>
+          <div class="cell" style="height:100%;padding-right:10px">
+            <h2
+              class="text-xl"
+              style="font-size:3rem; padding-top:8px; color:white;"
+            >
+              {index + 1}
+            </h2>
           </div>
           <div class="cell colspan11">
-            <h3 class="align-left">{row.username}</h3>
-            <br />
-            <div class="flex-grid">
+            <div>
+              <span style="float:left">
+                <h3
+                  class="align-left"
+                  style={`color:${
+                    lastUser === row.username ? "whitesmoke" : "white"
+                  };font-size:1rem; padding-top:5px;padding-bottom:0px;margin-bottom:12px`}
+                >
+                  {row.username}
+                </h3>
+              </span>
+              <span style="float:right">
+                <div>
+                  <p
+                    style="color:whitesmoke;font-size:1rem; padding-top:5px;padding-bottom:0px;margin-bottom:12px;padding-right:10px;"
+                  >
+                    <b>{row["total_score"]}</b>&nbsp;&nbsp;&nbsp;&nbsp;<small
+                      >{row["total_penalty"]}</small
+                    >
+                  </p>
+                </div>
+              </span>
+            </div>
+
+            <div
+              class="flex-grid"
+              style="padding-bottom:0px; padding-right:10px; padding-top:0px"
+            >
               <div class="row cell-auto-size">
                 {#each problems as p, index (p.id)}
                   {#if row["problem_" + p.letter + "_score"] > 0}
-                    <div class="cell" style="background-color:greenyellow">
+                    <!-- eita green -->
+                    <div
+                      class="cell"
+                      style="background-color: #519259; border-radius:5px "
+                    >
                       {p.letter}<br />
                       <small>
                         {row["problem_" + p.letter + "_penalty"]}
                       </small>
                     </div>
                   {:else if frozenSubmissions[row.username][p.letter] != undefined && frozenSubmissions[row.username][p.letter].length > 0}
-                    <div class="cell" style="background-color:yellow">
+                    <!-- eita yellow   -->
+                    <div
+                      class="cell"
+                      style="background-color:#f8cb2e; border-radius:5px"
+                    >
                       {p.letter}<br />
                       <small>
-                        {Object.keys(frozenSubmissions[row.username][p.letter])
-                          .length > 0
+                        {row["problem_" + p.letter + "_submission"] > 0
+                          ? row["problem_" + p.letter + "_submission"]
+                          : 0}&nbsp;&nbsp;&nbsp;+{Object.keys(
+                          frozenSubmissions[row.username][p.letter]
+                        ).length > 0
                           ? Object.keys(
                               frozenSubmissions[row.username][p.letter]
-                            ).length + " - "
-                          : ""}{row["problem_" + p.letter + "_penalty"].length >
-                        0
-                          ? row["problem_" + p.letter + "_penalty"].length
-                          : "0"}
+                            ).length
+                          : ""}
+                        <!-- // Submission{Object.keys( -->
+                        <!-- frozenSubmissions[row.username][p.letter] -->
+                        <!-- ).length > 1 -->
+                        <!-- ? "s" -->
+                        <!-- : ""} -->
                       </small>
                     </div>
                   {:else if row["problem_" + p.letter + "_score"] == "0"}
-                    <div class="cell" style="background-color:red">
+                    <!-- eita red -->
+                    <div
+                      class="cell"
+                      style="background-color:#ea5455; border-radius:5px;padding-top:10px"
+                    >
                       {p.letter}<br />
-                      <small>
+                      <!-- <small>
                         {row["problem_" + p.letter + "_penalty"]}
-                      </small>
+                      </small> -->
                     </div>
                   {:else}
-                    <div class="cell">
-                      {row["problem_" + p.letter + "_score"]}
+                    <div
+                      class="cell"
+                      style="background-color:grey; border-radius:5px;padding-top:10px"
+                    >
+                      <!-- eita grey -->
+                      {p.letter}
                     </div>
                   {/if}
                 {/each}
@@ -563,12 +628,14 @@
 <style>
   :root {
     --svelte-rgb: 255, 62, 0;
+    font-family: "Prompt", sans-serif;
   }
   main {
     text-align: center;
     padding: 1em;
     max-width: 240px;
     margin: 0 auto;
+    background-color: #252525; /**/
   }
 
   @media (min-width: 640px) {
@@ -582,7 +649,7 @@
     box-sizing: border-box;
     border-width: 0;
     border-style: solid;
-    border-color: #e5e7eb;
+    border-color: #faf5e4;
   }
   :before,
   :after {
@@ -601,6 +668,7 @@
   body {
     margin: 0;
     line-height: inherit;
+    background-color: #d8c593;
   }
   hr {
     height: 0;
