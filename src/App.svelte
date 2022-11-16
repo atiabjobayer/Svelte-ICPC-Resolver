@@ -13,9 +13,13 @@
   let lastUser: string;
   let intId;
 
+  let awardScreen = false;
+
   const loadData = async () => {
     loaded = false;
-    const response = await fetch("http://localhost:8080/about/resolver/207/30");
+    const response = await fetch(
+      "https://api.jsonbin.io/v3/b/62161244ca70c44b6ea77726"
+    );
 
     let data = await response.json();
     console.log(data);
@@ -382,6 +386,7 @@
       }
     } else {
       console.log("No pending submission for " + lastUser);
+      //checkAward(lastUser, lastIndex);
       lastIndex--;
 
       focusTo(lastIndex);
@@ -397,6 +402,20 @@
     await new Promise<void>((done) => setTimeout(() => done(), 2000));
 
     intId = setInterval(process, 1000);
+  };
+
+  var awardData = {
+    username: "",
+    awards: [],
+  };
+
+  const checkAward = (username: string, rank: number) => {
+    if (rank == 54) {
+      awardData.username = username;
+      awardData.awards.push("55th Position Award");
+
+      awardScreen = true;
+    }
   };
 
   onMount(() => {
@@ -437,7 +456,30 @@
   href="https://gonitzoggo.com/assets/metro/css/metro-schemes.min.css"
 />
 <main class="text-center p-4 mx-0">
-  {#if loaded}
+  {#if awardScreen}
+    <div style="height: 100vh; width: 100vw; color:whitesmoke">
+      <h3>Award Screen</h3>
+      <br /><br />
+      <center
+        ><img
+          src="https://www.cse.cuhk.edu.hk/wp-content/uploads/achievement/original/icpc2019-1_l.jpg"
+          alt="Winning team"
+          style="width:500px; border-radius:5px"
+        />
+        <br /><br />
+        <h2>{awardData.username}</h2>
+        {#each awardData.awards as aw}
+          <h3>{aw}</h3>
+        {/each}
+      </center>
+    </div>
+    <button
+      on:click={() => (awardScreen = !awardScreen)}
+      class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
+    >
+      Close
+    </button>
+  {:else if loaded}
     <h3>{contest.name}</h3>
     <div class="grid">
       {#each scoreboard as row, index (row.username)}
