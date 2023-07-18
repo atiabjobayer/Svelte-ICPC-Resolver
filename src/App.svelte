@@ -2,7 +2,12 @@
   import { flip } from "svelte/animate";
   import { onMount } from "svelte";
 
-  let contest, scoreboard, problems, problemData, frozenSubmissions, frozenCopy;
+  let contest,
+    scoreboard,
+    problems,
+    problemAssoc,
+    frozenSubmissions,
+    frozenCopy;
   let loaded: boolean = false;
   let startTime: Date;
   let usernameQueue: [] = [];
@@ -24,16 +29,8 @@
     let data = await response.json();
     console.log(data);
 
-    //data = JSON.parse(JSON.stringify(data));
-
-    ({
-      contest,
-      scoreboard,
-      problems,
-      problemData,
-      frozenSubmissions,
-      frozenCopy,
-    } = data.record[0].data);
+    ({ contest, scoreboard, problems, frozenSubmissions } =
+      data.record[0].data);
 
     sortScore();
     loaded = true;
@@ -42,8 +39,13 @@
 
     lastIndex = scoreboard.at(-1).position - 1;
     lastUser = scoreboard.at(-1).username;
+    frozenCopy = { ...frozenSubmissions };
 
-    //frozenCopy = frozenSubmissions;
+    problemAssoc = [];
+
+    problems.forEach((element) => (problemAssoc[element.id] = element));
+
+    console.log(problemAssoc);
 
     console.log(lastIndex);
   };
@@ -82,7 +84,7 @@
     letter: string,
     lastSubmission: boolean
   ): boolean {
-    //console.log(submission);
+    /** Parsing JSON string/null values to int  */
     if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_score"])) {
       scoreboard[lastIndex]["problem_" + letter + "_score"] = parseInt(
         scoreboard[lastIndex]["problem_" + letter + "_score"]
@@ -133,91 +135,42 @@
       }
     }
 
-    // scoreboard[lastIndex]["problem_" + letter + "_penalty"] = minute(
-    //   Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) + 1200
-    // );
+    /** Parsing Ended */
 
     if (submission["verdict"] == "1") {
+      /** if the submission is correct, then scores and penalties are updated */
       scoreboard[lastIndex]["problem_" + letter + "_score"] =
         scoreboard[lastIndex]["problem_" + letter + "_score"] +
-        parseInt(problemData[submission["problem"]]["score"]);
-
-      // if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_score"])) {
-      //   console.log("NaN checkpoint 2");
-      // }
-
+        parseInt(problemAssoc[submission["problem"]]["score"]);
       scoreboard[lastIndex]["total_score"] =
         Number(scoreboard[lastIndex]["total_score"]) +
         Number(scoreboard[lastIndex]["problem_" + letter + "_score"]);
 
-      // if (isNaN(scoreboard[lastIndex]["total_score"])) {
-      //   console.log("NaN checkpoint 3");
-      // }
-
-      // if (isNaN(scoreboard[lastIndex]["total_score"]))
-      //   scoreboard[lastIndex]["total_score"] = 0;
-
-      // score added
-
-      var subTime: Date = new Date(submission["time"]);
-
-      var delay: number = (subTime.getTime() - startTime.getTime()) / 1000;
+      var subTime: Date = new Date(submission["time"]); // submission time
+      var delay: number = (subTime.getTime() - startTime.getTime()) / 1000; // after how many seconds from the beginning the submission was made
 
       var agerSub = Number(
         scoreboard[lastIndex]["problem_" + letter + "_submission"]
       );
-      console.log(frozenCopy);
       var newSub =
         Object.keys(frozenCopy[lastUser][letter]).length -
         Object.keys(frozenSubmissions[lastUser][letter]).length +
         1;
 
-      console.log("Puran submission ache = " + agerSub);
-      console.log("Notun submission = " + newSub);
-      console.log("Penalty hoilo = " + (agerSub + newSub) * 1200);
-
+      /** Penalty for a problem = submission count till first correct submission * 20 minutes + first correct submission's delay */
       scoreboard[lastIndex]["problem_" + letter + "_penalty"] =
         Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) +
         (agerSub + newSub) * 1200;
-
-      // if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_penalty"])) {
-      //   console.log("NaN checkpoint 4");
-      // }
-
-      // console.log(
-      //   "problem_ " +
-      //     letter +
-      //     "_penalty: " +
-      //     scoreboard[lastIndex]["problem_" + letter + "_penalty"]
-      // );
-
-      // console.log(
-      //   "problem_ " +
-      //     letter +
-      //     "_submission: " +
-      //     scoreboard[lastIndex]["problem_" + letter + "_submission"] * 1200
-      // );
-
       scoreboard[lastIndex]["problem_" + letter + "_penalty"] = minute(
         Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]) + delay
       );
-
-      // if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_penalty"])) {
-      //   console.log("NaN checkpoint 5");
-      // }
     } else {
+      /** if the submission is not correct, penalty remains zero */
       scoreboard[lastIndex]["problem_" + letter + "_score"] = 0;
-      //scoreboard[lastIndex]["problem_" + letter + "_penalty"] = 0;
-
-      if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_score"])) {
-        console.log("NaN checkpoint 6");
-      }
     }
 
-    //if (lastSubmission) {
     if (scoreboard[lastIndex]["problem_" + letter + "_score"] == 0)
       scoreboard[lastIndex]["problem_" + letter + "_penalty"] = 0;
-    //}
 
     if (isNaN(scoreboard[lastIndex]["problem_" + letter + "_penalty"]))
       scoreboard[lastIndex]["problem_" + letter + "_penalty"] = 0;
@@ -226,29 +179,15 @@
       Number(scoreboard[lastIndex]["total_penalty"]) +
       Number(scoreboard[lastIndex]["problem_" + letter + "_penalty"]);
 
-    // if (isNaN(scoreboard[lastIndex]["total_penalty"])) {
-    //   console.log("NaN checkpoint 7");
-    // }
-
     if (isNaN(scoreboard[lastIndex]["total_score"]))
       scoreboard[lastIndex]["total_score"] = 0;
 
     if (submission["verdict"] == "1") {
+      /** sorting the scoreboard only if the last processed submission is correct */
       sortScore();
-      //lastIndex--;
     }
 
-    // return shouldYouStop
-
     return false;
-
-    // if (Object.keys(frozenSubmissions[lastUser][letter]).length > 1) {
-    //   return false;
-    // }
-
-    // return true;
-
-    //checknewxtProblem = return submission["verdict"] == "0";
   }
 
   const process = () => {
@@ -256,11 +195,7 @@
       clearInterval(intId);
     }
 
-    focusTo(lastIndex);
-
-    console.log("Process Started");
-    console.log("Last Index: " + lastIndex);
-    console.log("Last User: " + lastUser);
+    focusTo(lastIndex); // scrolling to the correct processing row tile
 
     Object.keys(frozenSubmissions).length;
 
@@ -274,26 +209,16 @@
       if (element.length > 0) {
         lastPersonHasSubmission = true;
         break;
-      } else {
-        // prottek row er pore thamar code eikhane likhte hobe
       }
     }
-
-    // for (var i = 0; i < Object.keys(frozenSubmissions[lastUser]).length; i++) {
-    //   var element = frozenSubmissions[lastUser][i];
-    //   if (element.length > 0) {
-    //     lastPersonHasSubmission = true;
-    //     break;
-    //   }
-    // }
 
     if (lastPersonHasSubmission) {
       console.log("Last person has pending submission");
 
       var checkNextProblems: boolean = true;
 
-      for (var i = 0; i < Object.keys(problemData).length; i++) {
-        var letter: string = problemData[Object.keys(problemData)[i]].letter;
+      for (var i = 0; i < Object.keys(problemAssoc).length; i++) {
+        var letter: string = problemAssoc[Object.keys(problemAssoc)[i]].letter;
 
         console.log("Checking letter " + letter);
 
@@ -304,9 +229,9 @@
             " pending submission"
         );
 
-        // check if user er X problem er kono AC ache kina
+        // check if user er X has AC in any problem
 
-        var checkifAChe: boolean = false;
+        var checkIfAC: boolean = false;
         var ACIndex: number = 0;
 
         for (
@@ -322,7 +247,7 @@
           if (submission["verdict"] == "1") {
             // frozenSubmissions[lastUser][letter] = [];
             ACIndex = j;
-            checkifAChe = true;
+            checkIfAC = true;
             break;
           }
         }
@@ -353,13 +278,9 @@
             "Next problem e " + (checkNextProblems ? "zao" : "zaiyona")
           );
 
-          // removing the submissiom
-          console.log(checkifAChe ? "AC Ache" : "AC Nai");
-          console.log("AC er index hoitese = " + ACIndex);
-
           var spliceCount: number = 0;
 
-          if (checkifAChe) {
+          if (checkIfAC) {
             spliceCount = ACIndex;
           } else {
             spliceCount =
@@ -367,12 +288,6 @@
           }
 
           frozenSubmissions[lastUser][letter].splice(j, spliceCount);
-          // console.log(
-          //   "Deleting submission #" + frozenSubmissions[lastUser][letter][0].id
-          // );
-          // frozenSubmissions[lastUser][letter] =
-          //   frozenSubmissions[lastUser][letter].shift();
-          //
 
           if (submission["verdict"] == "1") {
             frozenSubmissions[lastUser][letter] = [];
@@ -386,7 +301,6 @@
       }
     } else {
       console.log("No pending submission for " + lastUser);
-      //checkAward(lastUser, lastIndex);
       lastIndex--;
 
       focusTo(lastIndex);
@@ -402,20 +316,6 @@
     await new Promise<void>((done) => setTimeout(() => done(), 2000));
 
     intId = setInterval(process, 1000);
-  };
-
-  var awardData = {
-    username: "",
-    awards: [],
-  };
-
-  const checkAward = (username: string, rank: number) => {
-    if (rank == 54) {
-      awardData.username = username;
-      awardData.awards.push("55th Position Award");
-
-      awardScreen = true;
-    }
   };
 
   onMount(() => {
@@ -456,31 +356,11 @@
   href="https://gonitzoggo.com/assets/metro/css/metro-schemes.min.css"
 />
 <main class="text-center p-4 mx-0">
-  {#if awardScreen}
-    <div style="height: 100vh; width: 100vw; color:whitesmoke">
-      <h3>Award Screen</h3>
-      <br /><br />
-      <center
-        ><img
-          src="https://www.cse.cuhk.edu.hk/wp-content/uploads/achievement/original/icpc2019-1_l.jpg"
-          alt="Winning team"
-          style="width:500px; border-radius:5px"
-        />
-        <br /><br />
-        <h2>{awardData.username}</h2>
-        {#each awardData.awards as aw}
-          <h3>{aw}</h3>
-        {/each}
-      </center>
-    </div>
-    <button
-      on:click={() => (awardScreen = !awardScreen)}
-      class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
-    >
-      Close
-    </button>
-  {:else if loaded}
-    <h3>{contest.name}</h3>
+  {#if loaded}
+    <h1 style="color:white; font-size:2rem">ICPC Resolver Clone</h1>
+    <br />
+    <h2 style="color:white; font-size:1rem">By Atiab Jobayer</h2>
+    <br /><br />
     <div class="grid">
       {#each scoreboard as row, index (row.username)}
         <div
@@ -558,11 +438,6 @@
                               frozenSubmissions[row.username][p.letter]
                             ).length
                           : ""}
-                        <!-- // Submission{Object.keys( -->
-                        <!-- frozenSubmissions[row.username][p.letter] -->
-                        <!-- ).length > 1 -->
-                        <!-- ? "s" -->
-                        <!-- : ""} -->
                       </small>
                     </div>
                   {:else if row["problem_" + p.letter + "_score"] == "0"}
@@ -572,9 +447,6 @@
                       style="background-color:#ea5455; border-radius:5px;padding-top:10px"
                     >
                       {p.letter}<br />
-                      <!-- <small>
-                        {row["problem_" + p.letter + "_penalty"]}
-                      </small> -->
                     </div>
                   {:else}
                     <div
@@ -601,72 +473,6 @@
   {/if}
 </main>
 
-<!-- <main class="text-center p-4 mx-0">
-  {#if loaded}
-    <h3>{contest.name}</h3>
-    <div class="grid">
-      {#each scoreboard as row, index (row.username)}
-        <div
-          id="row{row.username}"
-          class="row cells{problems.length + 2}"
-          style={`background-color:${
-            lastUser === row.username ? "#a69eff" : "#c2ccc5"
-          }`}
-          animate:flip={{ delay: 125 }}
-        >
-          <div class="cell">
-            {index + 1}
-            <small>{row.username}</small>
-          </div>
-          <div class="cell">
-            {row.total_score}
-            <br />
-            <small>{row.total_penalty}</small>
-          </div>
-
-          {#each problems as p, index (p.id)}
-            {#if row["problem_" + p.letter + "_score"] > 0}
-              <div class="cell" style="background-color:greenyellow">
-                {p.letter}<br />
-                <small>
-                  {row["problem_" + p.letter + "_penalty"]}
-                </small>
-              </div>
-            {:else if frozenSubmissions[row.username][p.letter] != undefined && frozenSubmissions[row.username][p.letter].length > 0}
-              <div class="cell" style="background-color:yellow">
-                {p.letter}<br />
-                <small>
-                  {Object.keys(frozenSubmissions[row.username][p.letter])
-                    .length > 0
-                    ? Object.keys(frozenSubmissions[row.username][p.letter])
-                        .length + " - "
-                    : ""}{row["problem_" + p.letter + "_penalty"].length > 0
-                    ? row["problem_" + p.letter + "_penalty"].length
-                    : "0"}
-                </small>
-              </div>
-            {:else if row["problem_" + p.letter + "_score"] == "0"}
-              <div class="cell" style="background-color:red">
-                {p.letter}<br />
-                <small>
-                  {row["problem_" + p.letter + "_penalty"]}
-                </small>
-              </div>
-            {:else}
-              <div class="cell">{row["problem_" + p.letter + "_score"]}</div>
-            {/if}
-          {/each}
-        </div>
-      {/each}
-    </div>
-    <button
-      on:click={process}
-      class="fixed z-10 px-4 py-2 rounded text-white bg-indigo-500 hover:bg-indigo-600 font-semibold bottom-8 right-8"
-    >
-      Resolve
-    </button>
-  {/if}
-</main> -->
 <style>
   :root {
     --svelte-rgb: 255, 62, 0;
@@ -696,26 +502,6 @@
   :before,
   :after {
     --tw-content: "";
-  }
-  html {
-    line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-    -moz-tab-size: 4;
-    -o-tab-size: 4;
-    tab-size: 4;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif,
-      "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
-  }
-  body {
-    margin: 0;
-    line-height: inherit;
-    background-color: #d8c593;
-  }
-  hr {
-    height: 0;
-    color: inherit;
-    border-top-width: 1px;
   }
   abbr:where([title]) {
     -webkit-text-decoration: underline dotted;

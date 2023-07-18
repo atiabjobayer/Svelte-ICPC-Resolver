@@ -1,34 +1,12 @@
-STTV - Svelte / Typescript / Tailwind / Vite Template
-=====================================================
+# ICPC Resolver Clone
 
-Get up and running with Svelte, Typescript, Tailwind and Vite. Also includes testing setup using Jest.
+Resolver is the most exciting part of ICPC (International Collegiate Programming Contest) finale to me. It always fascinated me how they do it. I tried using their tool with a dummy scoreboard but it was too intertwined with a lot of other services. So this is my little attempt to replicate the software that has fascinated me for years. Used Svelte for easy animation.
 
-Installation
-------------
+#### The animation only works in firefox browser. Chrome can't run Svelte animation for some reason.
+
+## Installation
 
 ```
-npx degit "srmullen/sttv#main" my_app
-cd my_app
 npm install
+npm run dev
 ```
-
-Scripts
--------
-
-### Start a development server
-
-`npm run dev`
-
-### Run tests
-
-`npm run test`
-or
-`npm run test:watch`
-
-### Build the application
-
-`npm run build`
-
-### Serve the application
-
-`npm run serve`
